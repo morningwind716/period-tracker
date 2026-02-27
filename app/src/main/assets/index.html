@@ -55,6 +55,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .empty{text-align:center;padding:32px;color:#ccc;font-size:14px}
 .tip{background:#fff;border-radius:12px;padding:14px;margin-bottom:8px;font-size:13px;color:var(--gray);line-height:1.6}
 .tip b{color:var(--pink-d)}
+.cfm-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:flex;align-items:center;justify-content:center}
+.cfm{background:#fff;border-radius:16px;padding:24px 20px 16px;width:280px;text-align:center}
+.cfm p{font-size:15px;color:var(--text);margin-bottom:20px;line-height:1.5}
+.cfm-btns{display:flex;gap:10px}
+.cfm-no{flex:1;padding:11px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-size:15px;cursor:pointer}
+.cfm-yes{flex:1;padding:11px;border:none;border-radius:10px;background:var(--pink-d);color:#fff;font-size:15px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -95,6 +101,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <button class="fab" onclick="openModal()">+</button>
+
+<div class="cfm-bg" id="cfm-modal" style="display:none">
+  <div class="cfm">
+    <p>确认删除这条记录？</p>
+    <div class="cfm-btns">
+      <button class="cfm-no" onclick="document.getElementById('cfm-modal').style.display='none'">取消</button>
+      <button class="cfm-yes" id="cfm-ok">删除</button>
+    </div>
+  </div>
+</div>
 
 <div class="mbg" id="modal" style="display:none" onclick="bgClose(event)">
   <div class="modal">
@@ -260,8 +276,13 @@ function saveRec(){
 }
 
 function delRec(id){
-  if(!confirm('确认删除这条记录？'))return;
-  save(load().filter(r=>r.id!==id));render();
+  const modal=document.getElementById('cfm-modal');
+  modal.style.display='flex';
+  document.getElementById('cfm-ok').onclick=function(){
+    modal.style.display='none';
+    save(load().filter(r=>r.id!==id));
+    render();
+  };
 }
 
 render();
