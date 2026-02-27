@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>周期日历</title>
+<style>
+:root{--pink:#f472b6;--pink-l:#fce7f3;--pink-d:#db2777;--purple:#a855f7;--green:#22c55e;--green-l:#dcfce7;--bg:#fdf2f8;--gray:#6b7280;--text:#1f2937}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.wrap{max-width:420px;margin:0 auto;padding-bottom:90px}
+.header{background:linear-gradient(135deg,#f472b6,#a855f7);padding:20px 16px 16px;color:#fff}
+.header h1{font-size:18px;font-weight:600}
+.header .sub{font-size:12px;opacity:.85;margin-top:3px;min-height:16px}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 16px}
+.sc{background:#fff;border-radius:12px;padding:12px 8px;text-align:center}
+.sv{font-size:20px;font-weight:700}.sl{font-size:10px;color:var(--gray);margin-top:3px}
+.sv.pk{color:var(--pink-d)}.sv.gr{color:#16a34a}.sv.pu{color:var(--purple)}
+.cal-wrap{background:#fff;margin:0 16px 12px;border-radius:16px;padding:14px}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-nav button{background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray);padding:2px 10px;line-height:1}
+.cal-nav span{font-size:15px;font-weight:600}
+.wdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
+.wdays span{text-align:center;font-size:11px;color:var(--gray);padding:3px 0}
+.cdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cd{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;border-radius:50%;cursor:pointer;transition:.15s}
+.cd.today{font-weight:700;border:2px solid var(--pink)}
+.cd.period{background:var(--pink);color:#fff}
+.cd.pred{background:var(--pink-l);color:var(--pink-d)}
+.cd.fertile{background:var(--green-l);color:#16a34a}
+.cd.fertile.period{background:var(--pink);color:#fff}
+.legend{display:flex;gap:14px;padding:0 16px 12px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--gray)}
+.ld{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.sec{margin:0 16px 12px}
+.sec-t{font-size:12px;font-weight:600;color:var(--gray);margin-bottom:8px;letter-spacing:.5px}
+.hi{background:#fff;border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:0}
+.hdot{width:10px;height:10px;border-radius:50%;background:var(--pink);margin-right:12px;flex-shrink:0}
+.hinfo{flex:1;min-width:0}
+.hdate{font-size:14px;font-weight:500}
+.hdetail{font-size:12px;color:var(--gray);margin-top:2px}
+.hcycle{font-size:12px;font-weight:600;color:var(--purple);white-space:nowrap;margin-left:8px}
+.delbtn{background:none;border:none;color:#ddd;font-size:20px;cursor:pointer;padding:4px 6px;line-height:1}
+.fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;border:none;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(244,114,182,.5);display:flex;align-items:center;justify-content:center;z-index:100}
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:flex-end}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 36px;width:100%}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:16px}
+.mrow{margin-bottom:13px}
+.mrow label{display:block;font-size:11px;color:var(--gray);margin-bottom:4px}
+.mrow input,.mrow select{width:100%;padding:11px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;background:#fff;-webkit-appearance:none}
+.mrow input:focus,.mrow select:focus{border-color:var(--pink)}
+.mbtns{display:flex;gap:10px;margin-top:16px}
+.bcn{flex:1;padding:13px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-size:15px;cursor:pointer}
+.bsv{flex:2;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;font-size:15px;font-weight:500;cursor:pointer}
+.empty{text-align:center;padding:32px;color:#ccc;font-size:14px}
+.tip{background:#fff;border-radius:12px;padding:14px;margin-bottom:8px;font-size:13px;color:var(--gray);line-height:1.6}
+.tip b{color:var(--pink-d)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>🌸 周期日历</h1>
+    <div class="sub" id="hd-sub">记录你的健康周期</div>
+  </div>
+
+  <div class="stats">
+    <div class="sc"><div class="sv pk" id="s-next">--</div><div class="sl">距下次(天)</div></div>
+    <div class="sc"><div class="sv pu" id="s-day">--</div><div class="sl">周期第几天</div></div>
+    <div class="sc"><div class="sv gr" id="s-cycle">28天</div><div class="sl">平均周期</div></div>
+  </div>
+
+  <div class="cal-wrap">
+    <div class="cal-nav">
+      <button onclick="chCal(-1)">‹</button>
+      <span id="cal-t"></span>
+      <button onclick="chCal(1)">›</button>
+    </div>
+    <div class="wdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+    <div class="cdays" id="cdays"></div>
+  </div>
+
+  <div class="legend">
+    <div class="li"><div class="ld" style="background:#f472b6"></div>月经期</div>
+    <div class="li"><div class="ld" style="background:#fce7f3;border:1px solid #f9a8d4"></div>预测期</div>
+    <div class="li"><div class="ld" style="background:#dcfce7"></div>易孕期</div>
+  </div>
+
+  <div class="sec" id="tip-sec"></div>
+
+  <div class="sec">
+    <div class="sec-t">记录历史</div>
+    <div id="hist"></div>
+  </div>
+</div>
+
+<button class="fab" onclick="openModal()">+</button>
+
+<div class="mbg" id="modal" style="display:none" onclick="bgClose(event)">
+  <div class="modal">
+    <h3>📝 记录月经</h3>
+    <div class="mrow"><label>开始日期</label><input type="date" id="i-start"></div>
+    <div class="mrow"><label>结束日期（可选，不填默认5天）</label><input type="date" id="i-end"></div>
+    <div class="mrow"><label>经量</label>
+      <select id="i-flow"><option value="">不记录</option><option>少量</option><option>正常</option><option>量多</option></select>
+    </div>
+    <div class="mrow"><label>症状（可选）</label><input type="text" id="i-note" placeholder="痛经、腰酸、情绪波动..."></div>
+    <div class="mbtns">
+      <button class="bcn" onclick="closeModal()">取消</button>
+      <button class="bsv" onclick="saveRec()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function load(){return JSON.parse(localStorage.getItem('mc')||'[]')}
+function save(d){localStorage.setItem('mc',JSON.stringify(d))}
+function toD(s){return new Date(s+'T00:00:00')}
+function fmt(d){return d.toISOString().slice(0,10)}
+function today(){return fmt(new Date())}
+function diff(a,b){return Math.round((toD(a)-toD(b))/86400000)}
+
+function avgCycle(){
+  const r=load();if(r.length<2)return 28;
+  const cs=[];
+  for(let i=1;i<r.length;i++){const d=diff(r[i-1].start,r[i].start);if(d>15&&d<60)cs.push(d);}
+  return cs.length?Math.round(cs.reduce((a,b)=>a+b,0)/cs.length):28;
+}
+function avgDur(){
+  const r=load().filter(x=>x.end);if(!r.length)return 5;
+  const ds=r.map(x=>Math.max(1,diff(x.end,x.start)+1));
+  return Math.round(ds.reduce((a,b)=>a+b,0)/ds.length);
+}
+
+function periodSet(){
+  const r=load(),s=new Set(),ad=avgDur();
+  r.forEach(rec=>{
+    const dur=rec.end?Math.max(1,diff(rec.end,rec.start)+1):ad;
+    for(let i=0;i<dur;i++){const d=new Date(toD(rec.start));d.setDate(d.getDate()+i);s.add(fmt(d));}
+  });return s;
+}
+function predSet(){
+  const r=load();if(!r.length)return new Set();
+  const s=new Set(),ac=avgCycle(),ad=avgDur();
+  for(let c=1;c<=3;c++){
+    const ns=new Date(toD(r[0].start));ns.setDate(ns.getDate()+ac*c);
+    for(let i=0;i<ad;i++){const d=new Date(ns);d.setDate(d.getDate()+i);s.add(fmt(d));}
+  }return s;
+}
+function fertileSet(){
+  const r=load();if(!r.length)return new Set();
+  const s=new Set(),ac=avgCycle();
+  for(let c=0;c<=3;c++){
+    const cs=new Date(toD(r[0].start));cs.setDate(cs.getDate()+ac*c);
+    const ov=new Date(cs);ov.setDate(ov.getDate()+ac-14);
+    for(let i=-5;i<=4;i++){const d=new Date(ov);d.setDate(d.getDate()+i);s.add(fmt(d));}
+  }return s;
+}
+
+let cy=new Date().getFullYear(),cm=new Date().getMonth();
+function chCal(d){cm+=d;if(cm<0){cm=11;cy--;}if(cm>11){cm=0;cy++;}renderCal();}
+
+function renderCal(){
+  document.getElementById('cal-t').textContent=`${cy}年${cm+1}月`;
+  const ps=periodSet(),pr=predSet(),fs=fertileSet(),td=today();
+  const fd=new Date(cy,cm,1).getDay(),dim=new Date(cy,cm+1,0).getDate();
+  let h='';
+  for(let i=0;i<fd;i++)h+='<div class="cd"></div>';
+  for(let d=1;d<=dim;d++){
+    const ds=`${cy}-${String(cm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let c='cd';
+    if(ds===td)c+=' today';
+    if(ps.has(ds))c+=' period';
+    else if(pr.has(ds))c+=' pred';
+    if(fs.has(ds)&&!ps.has(ds))c+=' fertile';
+    h+=`<div class="${c}">${d}</div>`;
+  }
+  document.getElementById('cdays').innerHTML=h;
+}
+
+function renderStats(){
+  const r=load(),td=today(),ac=avgCycle();
+  document.getElementById('s-cycle').textContent=ac+'天';
+  if(!r.length){
+    document.getElementById('s-next').textContent='--';
+    document.getElementById('s-day').textContent='--';
+    document.getElementById('hd-sub').textContent='点击 + 记录第一次月经';
+    return;
+  }
+  const last=r[0];
+  const ns=new Date(toD(last.start));ns.setDate(ns.getDate()+ac);
+  const dtn=diff(fmt(ns),td);
+  const cd=diff(td,last.start)+1;
+  document.getElementById('s-next').textContent=dtn>0?dtn:(dtn===0?'今天':'延迟'+Math.abs(dtn));
+  document.getElementById('s-day').textContent=cd>0?'第'+cd+'天':'--';
+  if(dtn<=0)document.getElementById('hd-sub').textContent=dtn===0?'今天是预测月经日':'月经可能延迟了 '+Math.abs(dtn)+' 天';
+  else if(dtn<=5)document.getElementById('hd-sub').textContent='月经即将来临，还有 '+dtn+' 天';
+  else document.getElementById('hd-sub').textContent='下次月经预计 '+fmt(ns).slice(5).replace('-','月')+'日';
+}
+
+function renderTip(){
+  const r=load();
+  const el=document.getElementById('tip-sec');
+  if(!r.length){el.innerHTML='';return;}
+  const td=today(),ac=avgCycle();
+  const last=r[0];
+  const cd=diff(td,last.start)+1;
+  const ov=ac-14;
+  let tip='';
+  if(cd>=1&&cd<=avgDur()){tip=`<b>月经期第${cd}天</b>，注意保暖，避免剧烈运动，多补充铁质。`;}
+  else if(cd>avgDur()&&cd<ov-5){tip=`<b>卵泡期</b>（第${cd}天），雌激素上升，精力充沛，适合运动和社交。`;}
+  else if(cd>=ov-5&&cd<=ov+4){tip=`<b>易孕期</b>（第${cd}天），排卵日约在第${ov}天，如有备孕计划请注意。`;}
+  else{tip=`<b>黄体期</b>（第${cd}天），可能出现情绪波动或乳房胀痛，属正常现象。`;}
+  el.innerHTML=`<div class="sec-t">今日提示</div><div class="tip">${tip}</div>`;
+}
+
+function renderHist(){
+  const r=load();
+  const el=document.getElementById('hist');
+  if(!r.length){el.innerHTML='<div class="empty">暂无记录，点击右下角 + 添加</div>';return;}
+  el.innerHTML=r.map((rec,i)=>{
+    const dur=rec.end?(diff(rec.end,rec.start)+1)+'天':'约'+avgDur()+'天';
+    const cyc=i<r.length-1?diff(rec.start,r[i+1].start)+'天周期':'首次记录';
+    const tags=[rec.flow,rec.note].filter(Boolean).join(' · ');
+    return `<div class="hi">
+      <div class="hdot"></div>
+      <div class="hinfo">
+        <div class="hdate">${rec.start.slice(5).replace('-','月')}日 开始${rec.end?' · '+rec.end.slice(5).replace('-','月')+'日 结束':''}</div>
+        <div class="hdetail">持续 ${dur}${tags?' · '+tags:''}</div>
+      </div>
+      <div class="hcycle">${cyc}</div>
+      <button class="delbtn" onclick="delRec(${rec.id})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function render(){renderStats();renderCal();renderTip();renderHist();}
+
+function openModal(){
+  document.getElementById('i-start').value=today();
+  document.getElementById('i-end').value='';
+  document.getElementById('i-flow').value='';
+  document.getElementById('i-note').value='';
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+function bgClose(e){if(e.target.id==='modal')closeModal();}
+
+function saveRec(){
+  const start=document.getElementById('i-start').value;
+  const end=document.getElementById('i-end').value;
+  const flow=document.getElementById('i-flow').value;
+  const note=document.getElementById('i-note').value.trim();
+  if(!start){alert('请选择开始日期');return;}
+  if(end&&end<start){alert('结束日期不能早于开始日期');return;}
+  const r=load();
+  r.push({id:Date.now(),start,end,flow,note});
+  r.sort((a,b)=>b.start.localeCompare(a.start));
+  save(r);closeModal();render();
+}
+
+function delRec(id){
+  if(!confirm('确认删除这条记录？'))return;
+  save(load().filter(r=>r.id!==id));render();
+}
+
+render();
+</script>
+</body>
+</html>
